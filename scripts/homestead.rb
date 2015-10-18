@@ -1,5 +1,7 @@
 class Homestead
   def Homestead.configure(config, settings)
+    hosts = Array.new()
+    
     # Set The VM Provider
     ENV['VAGRANT_DEFAULT_PROVIDER'] = settings["provider"] ||= "virtualbox"
 
@@ -11,7 +13,11 @@ class Homestead
 
     # Configure The Box
     config.vm.box = settings["box"] ||= "laravel/homestead"
-    config.vm.hostname = settings["hostname"] ||= "homestead"
+    #config.vm.hostname = settings["hostname"] ||= "homestead"
+    # Configure The Hostnames
+    if (site.has_key?("hostname") && site["hostname"])
+      hosts.push(site["hostname"])
+    end
 
     # Configure A Private Network IP
     config.vm.network :private_network, ip: settings["ip"] ||= "192.168.10.10"
@@ -202,6 +208,19 @@ class Homestead
           settings["blackfire"][0]["client-token"]
         ]
       end
+    end
+    if hosts.any?
+      if config.vm.hostname.to_s.strip.length == 0
+        config.vm.hostname = 'dev-machine'
+      end
+
+      config.hostmanager.enabled           = true
+      config.hostmanager.manage_host       = true
+      config.hostmanager.ignore_private_ip = false
+      config.hostmanager.include_offline   = false
+      config.hostmanager.aliases           = hosts
+
+      config.vm.provision :hostmanager
     end
   end
 end
